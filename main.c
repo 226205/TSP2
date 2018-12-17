@@ -17,7 +17,7 @@ bool fileread(std::string);
 void Writetab(int**);
 void menu();
 //class Annealing();
-void SimAnn(double, double);
+void SimAnn(double, double, float);
 
 
 
@@ -139,6 +139,7 @@ void menu()
 //            Annealing* annealing = new Annealing();
             double temperatureMax;
             double temperatureMin;
+            float annealing = 0;
             do {
                 std::cout << "\n\nPodaj minimalna temperature: ";
                 std::cin >> temperatureMin;
@@ -146,8 +147,20 @@ void menu()
                 std::cin >> temperatureMax;
                 if(temperatureMax <= temperatureMin) std::cout << "Temperatura minimalna musi byc mniejsza od maksymalnej";
             } while (temperatureMax <= temperatureMin);
-            SimAnn(temperatureMax, temperatureMin);
-//            annealing->simulatedAnnealingAlgorithm(temperatureMax, temperatureMin);
+
+
+            do{
+                std::cout << "\n\nPodaj stopien wyzarzania (mnoznik temperatury przy kazdej kolejnej iteracji podany w formacie 0.xxx)\n 1. Wpisz wlasny\n 2. Wybierz domyslny 0.999\nTwoj wybor:  ";
+                int choice2 = getche();
+                if(choice2 == '1'){
+                    std::cout << "\nPodaj stopien wyzarzania (w formacie 0.xxx): ";
+                    std::cin >> annealing;
+                }
+                else if (choice2 == '2') annealing = 0.999;
+                else    std::cout << "\nCos poszlo zle, sprobuj ponownie.";
+            } while (annealing < 0 && annealing > 1);
+
+            SimAnn(temperatureMax, temperatureMin, annealing);
             break;
         }
         case '7':
@@ -164,7 +177,7 @@ void menu()
     }
 }
 
-void SimAnn(double temperatureMax, double temperatureMin)
+void SimAnn(double temperatureMax, double temperatureMin, float annealing)
 {
 
 	int* bestPath = new int[cityamount+1];      //sciezka i waga optymalnego rozwiazania
@@ -185,9 +198,10 @@ void SimAnn(double temperatureMax, double temperatureMin)
 //	for (int i = 0; i < cityamount + 1; i++) std::cout << " " << bestPath[i];
 
 	int* tempP = new int [cityamount + 1]; // dobry rozmiar????????????????????
-    int cityA, cityB, temp, diff;
-
+    int cityA, cityB, temp, sumA, sumB, diff;
+    int iteracja = 0;
     while (temperatureMax > temperatureMin) {
+        iteracja++;
         for (int i = 0; i <= cityamount; i++)
             tempP[i] = tempBestPath[i];
         do {
@@ -195,40 +209,44 @@ void SimAnn(double temperatureMax, double temperatureMin)
             cityB = (rand() % (cityamount - 1)) + 1;
         } while (cityA == cityB);
 
-        std::cout << "\n A: "<<cityA<<" B "<<cityB;
+//        std::cout << "\n A: "<<cityA<<" B "<<cityB;
 
         temp = tempP[cityA];
         tempP[cityA] = tempP[cityB];
         tempP[cityB] = temp;
 
 
-//        for (int i = 1; i < cityamount; i++) tempBestPath[i] = tempP[i];
-//        for (int i = 0; i < cityamount + 1; i++) std::cout << " " << tempBestPath[i];
-//        std::cout <<"\n";
-        diff = 0;
-        for(int i = 0; i < cityamount; i++){
-            diff += distances[tempP[i]][tempP[i + 1]];
-            diff -= distances[tempBestPath[i]][tempBestPath[i + 1]];
-        }
 
-//      float exponanta;
-//        exponanta = exp((-1)*diff / temperatureMax);
+        sumA = sumB = diff = 0;
+        for(int i = 0; i < cityamount; i++){
+            sumA += distances[tempP[i]][tempP[i + 1]];
+            sumB += distances[tempBestPath[i]][tempBestPath[i + 1]];
+        }
+        diff = sumA - sumB;
+
+
 //        std::cout <<"  diff: " << diff << "  exp: " << exp((-1)*diff / temperatureMax) << " Tmax:  " << temperatureMax;
 
-            if(((double)rand() / (RAND_MAX)) < exp((-1)*diff / temperatureMax) || diff < 0)  // zabezpieczenie przed przekreceniem inta
+        if(((double)rand() / (RAND_MAX)) < exp((-1)*diff / temperatureMax) || diff < 0){  // zabezpieczenie przed przekreceniem inta
 //            std::cout << "\n\n123456\n\n";
-
-
-
-
-
-
-
-
-
-        temperatureMax = temperatureMax * 0.9;
+            for(int i = 0; i < cityamount; i++)
+                tempBestPath[i] = tempP[i];
+            if(sumA < bestCost){    //sumA bo byla liczona dla temp ktory stal sie nowym tempBestPath
+                bestCost = sumA;
+                for (int i = 0; i < cityamount + 1; i++)
+                    bestPath[i] = tempBestPath[i];
+            }
+        }
+        temperatureMax = temperatureMax * annealing;
 	}
 
+    std::clock_t end = clock();
+    std::cout<<"\n\nNajkrotsza odnaleziona droga przez wszystkie miasta to:\n";
+    for(int i = 0; i < cityamount; i++)
+        std::cout << bestPath[i] << " -> ";
+    std::cout << bestPath[cityamount];
+    std::cout<<"\nJej calkowity dystans wynosi: " << bestCost;
+    std::cout<<"\nCzas: " << double(end - begin) / CLOCKS_PER_SEC << "\n\niteracja: "<<iteracja<< "\n\n";
 
 	delete[] tempBestPath;
 	delete[] bestPath;
