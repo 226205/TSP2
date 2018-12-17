@@ -17,7 +17,8 @@ bool fileread(std::string);
 void Writetab(int**);
 void menu();
 //class Annealing();
-void SimAnn(double, double, float);
+void AnnMenu();
+int SimAnn(double, double, float);
 
 
 
@@ -33,10 +34,10 @@ int  main()
 
 void chosingfile()
 {
-    std::string filename = "plik.txt";
+    std::string filename = "plik15.txt";
     int choice = 0;
     while(choice != '1' && choice != '2'){
-        std::cout << "Wybierz plik do wczytania: \n 1.Wpisz nazwe pliku do wczytania \n 2.Wczytaj domyslny plik tekstowy \"plik.txt\" \nTwoj wybor: ";
+        std::cout << "Wybierz plik do wczytania: \n 1.Wpisz nazwe pliku do wczytania \n 2.Wczytaj domyslny plik tekstowy \"plik15.txt\" \nTwoj wybor: ";
         choice = getche(); // pobieranie jednego znaku z klawiatury w formie kodu ascii
         switch (choice){
             case '1':
@@ -92,28 +93,6 @@ void Writetab(int** cities)
     }
 }
 
-//struct Annealing {
-//        int *bestPath;        //sciezka i waga optymalnego rozwiazania
-//        int bestCost;
-//        int *tempBestPath;        //sciezka i waga optymalnego rozwiazania tymczasowego
-//        int tempBestCost;
-//        double temperatureMax;          //temperatura max
-//        double temperatureMin;          //temperatira min
-//
-//        Annealing() {};
-//
-//        double decreaseTemperature();
-//        int simulatedAnnealingAlgorithm(double temperatureMax, double temperatureMin);
-//
-//        int* setBestPath();
-//        int* setTempBestPath();
-//
-//        int* RandomSwap(int* path);
-//        double Probability(int temperature, int* pathA, int* pathB);
-//
-////        ~Annealing();
-//};
-
 void menu()
 {
     int choice = -1;
@@ -136,31 +115,7 @@ void menu()
         }
         case '6':
         {
-//            Annealing* annealing = new Annealing();
-            double temperatureMax;
-            double temperatureMin;
-            float annealing = 0;
-            do {
-                std::cout << "\n\nPodaj minimalna temperature: ";
-                std::cin >> temperatureMin;
-                std::cout << "Podaj maksymalna temperature: ";
-                std::cin >> temperatureMax;
-                if(temperatureMax <= temperatureMin) std::cout << "Temperatura minimalna musi byc mniejsza od maksymalnej";
-            } while (temperatureMax <= temperatureMin);
-
-
-            do{
-                std::cout << "\n\nPodaj stopien wyzarzania (mnoznik temperatury przy kazdej kolejnej iteracji podany w formacie 0.xxx)\n 1. Wpisz wlasny\n 2. Wybierz domyslny 0.999\nTwoj wybor:  ";
-                int choice2 = getche();
-                if(choice2 == '1'){
-                    std::cout << "\nPodaj stopien wyzarzania (w formacie 0.xxx): ";
-                    std::cin >> annealing;
-                }
-                else if (choice2 == '2') annealing = 0.999;
-                else    std::cout << "\nCos poszlo zle, sprobuj ponownie.";
-            } while (annealing < 0 && annealing > 1);
-
-            SimAnn(temperatureMax, temperatureMin, annealing);
+            AnnMenu();
             break;
         }
         case '7':
@@ -177,15 +132,81 @@ void menu()
     }
 }
 
-void SimAnn(double temperatureMax, double temperatureMin, float annealing)
+void AnnMenu()
+{
+    int resultsSpread = 1000;
+    int newResult = 0;
+
+    int numberOfRepeats = 0;
+    int* results = new int[resultsSpread];
+    for(int i = 0; i < resultsSpread; i++)
+        results[i] = 0;
+
+    double temperatureMax = 1000;
+    double temperatureMin = 1;
+    float annealing = 0;
+    int choice = -1;
+    while (choice != '0'){
+        std::cout << "\n Symulowane wyrzazanie, ustaw porzadane parametry:\n 1. temperatureMax = " << temperatureMax << ", temperatureMin = " << temperatureMin << "\n 2. Stopien wyrzazania = " << annealing << "\n 6. Uruchom algorytm\n 0. Powrot do menu glownego\n Twoj wybor: ";
+        choice = getche();
+        switch(choice){
+            case '1':{
+                do {
+                    std::cout << "\n\nPodaj minimalna temperature: ";
+                    std::cin >> temperatureMin;
+                    std::cout << "Podaj maksymalna temperature: ";
+                    std::cin >> temperatureMax;
+                    if(temperatureMax <= temperatureMin) std::cout << "Temperatura minimalna musi byc mniejsza od maksymalnej";
+                } while (temperatureMax <= temperatureMin);
+                break;}
+
+            case '2':{
+                do{
+                    std::cout << "\n\nPodaj stopien wyzarzania (mnoznik temperatury przy kazdej kolejnej iteracji podany w formacie 0.xxx)\n 1. Wpisz wlasny\n 2. Wybierz domyslny 0.999\nTwoj wybor:  ";
+                    int choice2 = getche();
+                    if(choice2 == '1'){
+                        std::cout << "\nPodaj stopien wyzarzania (w formacie 0.xxx): ";
+                        std::cin >> annealing;
+                    }
+                    else if (choice2 == '2') annealing = 0.999;
+                    else    std::cout << "\nCos poszlo zle, sprobuj ponownie.";
+                } while (annealing < 0 && annealing > 1);
+                break;}
+
+            case '6':{
+                if(annealing < 0 && annealing > 1)
+                    std::cout << "\n Stopien wyrzazania nie zostal ustawiony, sprobuj ponownie.\n";
+                else{
+                    std::cout << "\n Wpisz ilosc powtorzen: ";
+                    std::cin >> numberOfRepeats;
+                    clock_t begin = clock();
+
+                    for(int i = 0; i < numberOfRepeats; i++){
+                        newResult = SimAnn(temperatureMax, temperatureMin, annealing);
+                        results[newResult]++;
+                    }
+                    std::clock_t end = clock();
+                    std::cout<<"\n\n\nCzas wykonania wszystkich prob: " << double(end - begin) / CLOCKS_PER_SEC << "\n\nproba srednio trwala: "<< (double(end - begin) / CLOCKS_PER_SEC) / numberOfRepeats << "\n Ilosc wystapien poszczegolnych wynikow:\n";
+                    for(int i = 0; i < resultsSpread; i++)
+                        if(results[i] > 0)
+                            std::cout << i << ": " << results[i] << "\n";
+                }
+            }
+            default:
+                break;
+        }
+    }
+    delete [] results;
+}
+
+int SimAnn(double temperatureMax, double temperatureMin, float annealing)
 {
 
 	int* bestPath = new int[cityamount+1];      //sciezka i waga optymalnego rozwiazania
 	int bestCost = INT_MAX;
 
 	int* tempBestPath = new int[cityamount+1];  //sciezka i waga optymalnego rozwiazania tymczasowego
-	int tempBestCost;
-    clock_t begin = clock();
+	int tempBestCost = INT_MAX;
 
     //setTempBestPath
 	tempBestPath[0] = tempBestPath[cityamount] = 0;
@@ -195,10 +216,8 @@ void SimAnn(double temperatureMax, double temperatureMin, float annealing)
 	for (int i = 0; i < cityamount + 1; i++)
 		bestPath[i] = tempBestPath[i];
 
-//	for (int i = 0; i < cityamount + 1; i++) std::cout << " " << bestPath[i];
-
-	int* tempP = new int [cityamount + 1]; // dobry rozmiar????????????????????
-    int cityA, cityB, temp, sumA, sumB, diff;
+	int* tempP = new int [cityamount + 1];
+    int cityA, cityB, temp, sumA, diff;
     int iteracja = 0;
     while (temperatureMax > temperatureMin) {
         iteracja++;
@@ -209,28 +228,25 @@ void SimAnn(double temperatureMax, double temperatureMin, float annealing)
             cityB = (rand() % (cityamount - 1)) + 1;
         } while (cityA == cityB);
 
-//        std::cout << "\n A: "<<cityA<<" B "<<cityB;
-
         temp = tempP[cityA];
         tempP[cityA] = tempP[cityB];
         tempP[cityB] = temp;
 
 
 
-        sumA = sumB = diff = 0;
+        sumA =  diff = 0;
         for(int i = 0; i < cityamount; i++){
             sumA += distances[tempP[i]][tempP[i + 1]];
-            sumB += distances[tempBestPath[i]][tempBestPath[i + 1]];
         }
-        diff = sumA - sumB;
-
-
-//        std::cout <<"  diff: " << diff << "  exp: " << exp((-1)*diff / temperatureMax) << " Tmax:  " << temperatureMax;
+        diff = sumA - tempBestCost;
 
         if(((double)rand() / (RAND_MAX)) < exp((-1)*diff / temperatureMax) || diff < 0){  // zabezpieczenie przed przekreceniem inta
 //            std::cout << "\n\n123456\n\n";
-            for(int i = 0; i < cityamount; i++)
+            tempBestCost = 0;
+            for(int i = 0; i < cityamount; i++){
                 tempBestPath[i] = tempP[i];
+                tempBestCost += distances[tempP[i]][tempP[i + 1]];
+            }
             if(sumA < bestCost){    //sumA bo byla liczona dla temp ktory stal sie nowym tempBestPath
                 bestCost = sumA;
                 for (int i = 0; i < cityamount + 1; i++)
@@ -240,14 +256,15 @@ void SimAnn(double temperatureMax, double temperatureMin, float annealing)
         temperatureMax = temperatureMax * annealing;
 	}
 
-    std::clock_t end = clock();
-    std::cout<<"\n\nNajkrotsza odnaleziona droga przez wszystkie miasta to:\n";
-    for(int i = 0; i < cityamount; i++)
-        std::cout << bestPath[i] << " -> ";
-    std::cout << bestPath[cityamount];
-    std::cout<<"\nJej calkowity dystans wynosi: " << bestCost;
-    std::cout<<"\nCzas: " << double(end - begin) / CLOCKS_PER_SEC << "\n\niteracja: "<<iteracja<< "\n\n";
+//    std::cout<<"\n\nNajkrotsza odnaleziona droga przez wszystkie miasta to:\n";
+//    for(int i = 0; i < cityamount; i++)
+//        std::cout << bestPath[i] << " -> ";
+//    std::cout << bestPath[cityamount];
+//    std::cout<<"\nJej calkowity dystans wynosi: " << bestCost;
+//    std::cout<<"\n\niteracja: "<<iteracja<< "\n\n";
 
 	delete[] tempBestPath;
 	delete[] bestPath;
+
+	return bestCost;
 }
