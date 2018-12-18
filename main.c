@@ -292,15 +292,15 @@ void TabuMenu()
 {
     int resultsSpread = 1000;
     int newResult = 0;
-    int doDiv = 10;
+    int doDiv = cityamount;
 
     int numberOfRepeats = 0;
     int* results = new int[resultsSpread];
     for(int i = 0; i < resultsSpread; i++)
         results[i] = 0;
 
-    int numberOfIteration = 1;
-    int tabuSize = 0;
+    int numberOfIteration = 100;
+    int tabuSize = cityamount;
 
 
     int choice = -1;
@@ -376,24 +376,15 @@ void TabuMenu()
 
 int TabuSearch(int numberOfIteration, int tabuSize, int doDiv)
 {
-        std::cout << "\n\n\n";
     int** tabuList = new int*[cityamount];             // inicjalizacja tablicy Tabu w rozmiarze x*x
-    for(int i = 1; i < cityamount; i++){
-        tabuList[i] = new int[cityamount];
-//        std::cout << "i: " << i << " c-i: " << cityamount <<"\n";
-    }
     for(int i = 1; i < cityamount; i++)
+        tabuList[i] = new int[cityamount];
+
+    for(int i = 1; i < cityamount; i++)                 // pierwotne zerowanie tabu
         for(int j = 1; j < cityamount; j++)
             tabuList[i][j] = 0;
 
 
-//           for(int i = 1; i < cityamount; i++){               // set n write tabu
-//        for(int j = 1; j < cityamount; j++){
-//            tabuList[i][j] = 0;
-//            std::cout << "0 ";}
-//       std::cout << "\n";}
-
-    int tabuIterator, ifTabu;
     int temp = 0;
 
 	int* bestPath = new int[cityamount + 1];      //sciezka i waga optymalnego rozwiazania
@@ -413,7 +404,7 @@ int TabuSearch(int numberOfIteration, int tabuSize, int doDiv)
     {
         if(divers == doDiv)
         {
-            //setTempBestPath on random
+            //setTempBestPath on random sequence
 
             bool* random = new bool[cityamount + 1];            //stworzenie tablicy mowiacej czy dana liczba juz wystapila w sekwencji
             random[0] = random[cityamount] = true;              //podpisanie pierwszego i ostatniego elementu jako juz wykonanego
@@ -451,7 +442,6 @@ int TabuSearch(int numberOfIteration, int tabuSize, int doDiv)
             tempCost= INT_MAX;
             for(int i = 1; i < cityamount-1; i++)
                 for(int j = i+1; j < cityamount; j++){
-//                    std::cout << "\n " << i << " " << j;
 
                     bestResult = 0;
                     // wyliczanie roznicy w koszcie, obliczajac jedynie roznice miedzy sciezkami bedacymi czesciami zamienionych miast
@@ -464,67 +454,66 @@ int TabuSearch(int numberOfIteration, int tabuSize, int doDiv)
 //                        std::cout << "\n " << i << "  " << j << "  cost: " << bestResult << " = " << distances[tempBestPath[i-1]][tempBestPath[j]] << " + " << distances[tempBestPath[j]][tempBestPath[i+1]] << " + " << distances[tempBestPath[j-1]][tempBestPath[i]] << " + " << distances[tempBestPath[i]][tempBestPath[j+1]] << " - " << distances[tempBestPath[i-1]][tempBestPath[i]] << " - " << distances[tempBestPath[i]][tempBestPath[i+1]] << " - " << distances[tempBestPath[j-1]][tempBestPath[j]] << " - " << distances[tempBestPath[j]][tempBestPath[j+1]];
                     }
 
-                    if(tempBestPath[i] > tempBestPath[j]){
-                        if(tabuList[tempBestPath[i]][tempBestPath[j]] == 0 || bestResult < 0)       //sprawdzenie czy nie nalezy do tabu badz spelnia kryterium aspiracji
-                            if(bestResult <= tempCost){
+//                    std::cout << "\n j: " << tempBestPath[j] << " i: " << tempBestPath[i];        //wypisywanie numerow zamienionych miast aby poprawnie uzyc tabuList
+                    if(tempBestPath[i] > tempBestPath[j]){                                          //tabuList dziala tylko po jednej stronie przekatnej macierzy przejsc, oby oszczedzic na ilosci operacji. wybieramy te strone realizujac podanego ifa
+//                        std::cout << "  j < i";
+                        if(tabuList[tempBestPath[j]][tempBestPath[i]] == 0 || bestResult < 0){      //sprawdzenie czy wygenerowany sasiad nie nalezy do tabu badz spelnia kryterium aspiracji
+                            if(bestResult <= tempCost){                                             //sprawdzenie czy wygenerowany sasiad jest lepszy od juz sprawdzonych
                                 tempPath[0] = i;
                                 tempPath[1] = j;
                                 tempCost = bestResult;
-                            }
+                        }    }
                     }
-                    else{
-                        if(tabuList[tempBestPath[i]][tempBestPath[j]] == 0 || bestResult < 0)       //sprawdzenie czy nie nalezy do tabu badz spelnia kryterium aspiracji
+                    else{                                                                           //to samo co w if z ta roznica, ze zostala wybrana komorka tablicy znajduja sie symetrycznie do przekatnej macierzy, aby uzywac tylko polowy tablicy
+//                        std::cout << "  j > i";
+                        if(tabuList[tempBestPath[i]][tempBestPath[j]] == 0 || bestResult < 0)
                             if(bestResult <= tempCost){
                                 tempPath[0] = i;
                                 tempPath[1] = j;
                                 tempCost = bestResult;}
-
                     }
                 }
-//            tworzenie nowego tempbestcost z tempCosta i nowej sekwencji ze zmiana
-//            std::cout << "\n\n";                                        //sprawdzanie
-//            for(int i = 0; i < cityamount; i++)
-//                std::cout << tempBestPath[i] << " -> ";
-//            std::cout << tempBestPath[cityamount] << "  tmpBCost: " << tempBestCost << "\n zamiana miejsca: " << tempPath[0] << " z " << tempPath[1];
 
-
-            temp = tempBestPath[tempPath[0]];
+            temp = tempBestPath[tempPath[0]];                               //zamiana najlepszych miast miejscami
             tempBestPath[tempPath[0]] = tempBestPath[tempPath[1]];
             tempBestPath[tempPath[1]] = temp;
 
-    //        std::cout << "\n\n";                        //sprawdzanie
-    //        for(int i = 0; i < cityamount; i++)
-    //            std::cout << tempBestPath[i] << " -> ";
-    //        std::cout << tempBestPath[cityamount];
+//            std::cout << "\n\n";                                        //sprawdzanie nowej, najlepszej sciezki
+//            for(int i = 0; i < cityamount; i++)
+//                std::cout << tempBestPath[i] << " -> ";
+//            std::cout << tempBestPath[cityamount] << "  tempBestCost: " << tempBestCost << "\n zamiana miejsca: " << tempPath[0] << " z " << tempPath[1];
 
             temp = 0;
             for(int i = 0; i <cityamount; i++)
                 temp += distances[tempBestPath[i]][tempBestPath[i + 1]];
+//            std::cout << "   Wyliczony nowy koszt: " << temp;         //wypis kosztu nowej sciezki
 
-    //        std::cout << "   Wyliczony nowy koszt: " << temp;
+            tempBestCost = temp;                        //dekrementacja tabu oraz dopisanie nowego przejscia do listy
 
-            if(temp != tempBestCost + tempCost)             //sprawdzenie
-                std::cout << "\n\n COS SIE POPSULO!!!";
-            else{
-                tempBestCost = temp;                        //dekrementacja tabu oraz dopisanie nowego przejscia do listy
-
-                for(int i = 1; i < cityamount; i++)         // set new oraz dekrementacja tabu
-                    for(int j = 1; j < cityamount - i; j++)
-                        if(tabuList[i][j] != 0)
-                            tabuList[i][j] -= 1;
-//                tabuList[tempPath[]] = tabuSize;
+            for(int i = 1; i < cityamount; i++){         //dekrementacja tabuList
+                for(int j = i + 1; j < cityamount; j++)
+                    if(tabuList[i][j] != 0)
+                        tabuList[i][j] -= 1;
             }
+
+            if(tempBestPath[tempPath[0]] < tempBestPath[tempPath[1]])                           // dodanie elementu do tabuList o wartosci tabuSize
+                tabuList[tempBestPath[tempPath[0]]][tempBestPath[tempPath[1]]] = tabuSize;
+            else
+                tabuList[tempBestPath[tempPath[1]]][tempBestPath[tempPath[0]]] = tabuSize;
+
         }
+//        std::cout << "\n\n";
+//        for(int i = 1; i < cityamount; i++){               // wypisanie tabuList
+//            for(int j = 1; j < cityamount; j++){
+//                std::cout << tabuList[i][j] << " ";}
+//           std::cout << "\n";}
 
-        for(int i = 1; i < cityamount; i++){               // wypisanie tabu
-            for(int j = 1; j < cityamount; j++){
-                std::cout << tabuList[i][j] << " ";}
-           std::cout << "\n";}
+        //ustawienie nowego BestPath
 
-        //setBestPath
-        if( bestCost > tempBestCost)
+        if( bestCost > tempBestCost)                    //zapisanie nowego najlepszego wyniku, badz zaznaczenie kolejnego z rzedu przejscia petli bez niego, aby wywolac funkcje dywersyfikacji
         {
             bestCost = tempBestCost;
+            divers = 0;
             for (int i = 0; i < cityamount + 1; i++)
                 bestPath[i] = tempBestPath[i];
         }
@@ -533,15 +522,15 @@ int TabuSearch(int numberOfIteration, int tabuSize, int doDiv)
 
     }
 
-    std::cout<<"\n\nNajkrotsza odnaleziona droga przez wszystkie miasta to:\n";
-    for(int i = 0; i < cityamount; i++)
-        std::cout << bestPath[i] << " -> ";
-    std::cout << bestPath[cityamount];
-    std::cout<<"\nJej calkowity dystans wynosi: " << bestCost;
+//    std::cout<<"\n\nNajkrotsza odnaleziona droga przez wszystkie miasta to:\n";           // wypisanie wyników procesu
+//    for(int i = 0; i < cityamount; i++)
+//        std::cout << bestPath[i] << " -> ";
+//    std::cout << bestPath[cityamount];
+//    std::cout<<"\nJej calkowity dystans wynosi: " << bestCost;
 
     delete[] tempBestPath;
 	delete[] bestPath;
 	delete[] tempPath;
 
-return 0;
+return bestCost;
 }
