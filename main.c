@@ -20,7 +20,7 @@ void menu();
 void AnnMenu();
 int SimAnn(double, double, float);
 void TabuMenu();
-int TabuSearch(int);
+int TabuSearch(int, int, int);
 
 
 
@@ -292,48 +292,53 @@ void TabuMenu()
 {
     int resultsSpread = 1000;
     int newResult = 0;
+    int doDiv = 10;
 
     int numberOfRepeats = 0;
     int* results = new int[resultsSpread];
     for(int i = 0; i < resultsSpread; i++)
         results[i] = 0;
 
-
+    int numberOfIteration = 1;
     int tabuSize = 0;
 
 
     int choice = -1;
     while (choice != '0'){
-        std::cout << "\n Tabu Search, ustaw porzadane parametry:\n 2. Wielkosc tablicy Tabu: " << tabuSize << "\n 7. Uruchom algorytm\n 8. Wyswietl wyniki\n 9. Wyczysc wyniki\n 0. Powrot do menu glownego\n Twoj wybor: ";
+        std::cout << "\n\n Tabu Search, ustaw porzadane parametry:\n 1. Ilosc iteracji programu: " << numberOfIteration << "\n 2. Wielkosc tablicy Tabu: " << tabuSize << "\n 3. Czestotliwosc dywersyfikowania: " << doDiv << "\n 7. Uruchom algorytm\n 8. Wyswietl wyniki\n 9. Wyczysc wyniki\n 0. Powrot do menu glownego\n Twoj wybor: ";
         choice = getche();
         switch(choice){
-            case '1':{
-//                do {
-//                    std::cout << "\n\nPodaj minimalna temperature: ";
-//                    std::cin >> temperatureMin;
-//                    std::cout << "Podaj maksymalna temperature: ";
-//                    std::cin >> temperatureMax;
-//                    if(temperatureMax <= temperatureMin) std::cout << "Temperatura minimalna musi byc mniejsza od maksymalnej";
-//                } while (temperatureMax <= temperatureMin);
-                break;}
 
-                //(annealing <= 0 || annealing >= 1);
+            case '1':{
+                do{
+                    std::cout << "\n Podaj liczbe iteracji (musi byc wieksza od zera): ";
+                    std::cin >> numberOfIteration;
+                }while(numberOfIteration <= 0);
+            break;
+            }
 
             case '2':{
                 do{
                     std::cout << "\n\nPodaj wielkosc tablicy Tabu\n 1. Wpisz wlasna\n 2. Wybierz domyslna '" << cityamount-1 << "'\nTwoj wybor:  ";
                     int choice2 = getche();
                     if(choice2 == '1'){
-                        std::cout << "\nPodaj wielkosc tablicy Tabu ( zakres: 1 -> " << (cityamount-1)*(cityamount-1)-1 << " : ";
+                        std::cout << "\nPodaj wielkosc tablicy Tabu ( zakres: 1 -> " << (cityamount-1)*(cityamount-1) /2 - 1 << " : ";
                         std::cin >> tabuSize;
                     }
                     else if (choice2 == '2') tabuSize = cityamount-1;
                     else    std::cout << "\nCos poszlo zle, sprobuj ponownie.";
-                } while (tabuSize < 1 || tabuSize > (cityamount-1)*(cityamount-1)-1 );
+                } while (tabuSize < 1 || tabuSize > (cityamount-1)*(cityamount-1) /2 -1 );
+                break;}
+
+            case '3':{
+                do {
+                    std::cout << "\n\nPodaj po jakiej liczbie bezowocnych iteracji ma nastapic dywersyfikacja (min = 2 ): ";
+                    std::cin >> doDiv;
+                } while (doDiv < 2);
                 break;}
 
             case '7':{
-                if(tabuSize < 1 || tabuSize > (cityamount-1)*(cityamount-1)-1)
+                if(tabuSize < 1 || tabuSize > (cityamount-1)*(cityamount-1) /2 -1)
                     std::cout << "\n Wielkosc tablicy Tabu nie zostala ustawiona, sprobuj ponownie.\n";
                 else{
                     std::cout << "\n Wpisz ilosc powtorzen: ";
@@ -341,7 +346,7 @@ void TabuMenu()
                     clock_t begin = clock();
 
                     for(int i = 0; i < numberOfRepeats; i++){
-                        newResult = TabuSearch(tabuSize);
+                        newResult = TabuSearch(numberOfIteration, tabuSize, doDiv);
                         results[newResult]++;
                     }
                     std::clock_t end = clock();
@@ -369,7 +374,7 @@ void TabuMenu()
 }
 
 
-int TabuSearch(int tabuSize)
+int TabuSearch(int numberOfIteration, int tabuSize, int doDiv)
 {
 
     int** tabuList = new int*[2];             // inicjalizacja tablicy Tabu w rozmiarze 2*x
@@ -384,21 +389,17 @@ int TabuSearch(int tabuSize)
 	int tempBestCost = INT_MAX;
     tempBestPath[0] = tempBestPath[cityamount] = 0;
 
-    int* tempPath = new int [cityamount + 1];
+    int* tempPath = new int [2];
     int tempCost = INT_MAX;
+    int bestResult = INT_MAX;
 
-    int doDiv = 10;
-    int divers;
-    divers = doDiv;
-    int numberOfIteration = 1;
+    int divers= doDiv;
 
     for(int q = 0; q < numberOfIteration; q++)
     {
         if(divers == doDiv)
         {
             //setTempBestPath on random
-            for(int i = 0; i <= cityamount; i++)
-                tempPath[i] = 0;
 
             bool* random = new bool[cityamount + 1];            //stworzenie tablicy mowiacej czy dana liczba juz wystapila w sekwencji
             random[0] = random[cityamount] = true;              //podpisanie pierwszego i ostatniego elementu jako juz wykonanego
@@ -433,13 +434,49 @@ int TabuSearch(int tabuSize)
         }
         else
         {
+            tempCost= INT_MAX;
+            for(int i = 1; i < cityamount-1; i++)
+                for(int j = i+1; j < cityamount; j++){
+//                    std::cout << "\n " << i << " " << j;
+
+                    bestResult = 0;
+                    // wyliczanie roznicy w koszcie, obliczajac jedynie roznice miedzy sciezkami bedacymi czesciami zamienionych miast
+                    if(i+1 == j){
+                        bestResult = distances[tempBestPath[i-1]][tempBestPath[i]] + distances[tempBestPath[i]][tempBestPath[i+1]] + distances[tempBestPath[j-1]][tempBestPath[j]] + distances[tempBestPath[j]][tempBestPath[j+1]] - distances[tempBestPath[i-1]][tempBestPath[j]] - distances[tempBestPath[j]][tempBestPath[i]] - distances[tempBestPath[j]][tempBestPath[i]] - distances[tempBestPath[i]][tempBestPath[j+1]];
+                        std::cout << "\n " << i << "  " << j << "  cost: " << bestResult << " = " << distances[tempBestPath[i-1]][tempBestPath[i]] << " + " << distances[tempBestPath[i]][tempBestPath[i+1]] << " + " << distances[tempBestPath[j-1]][tempBestPath[j]] << " + " << distances[tempBestPath[j]][tempBestPath[j+1]] << " - " << distances[tempBestPath[i-1]][tempBestPath[j]] << " - " << distances[tempBestPath[j]][tempBestPath[i]] << " - " << distances[tempBestPath[j]][tempBestPath[i]] << " - " << distances[tempBestPath[i]][tempBestPath[j+1]];
+                    }
+                    else{
+                        bestResult = distances[tempBestPath[i-1]][tempBestPath[i]] + distances[tempBestPath[i]][tempBestPath[i+1]] + distances[tempBestPath[j-1]][tempBestPath[j]] + distances[tempBestPath[j]][tempBestPath[j+1]] - distances[tempBestPath[i-1]][tempBestPath[j]] - distances[tempBestPath[j]][tempBestPath[i+1]] - distances[tempBestPath[j-1]][tempBestPath[i]] - distances[tempBestPath[i]][tempBestPath[j+1]];
+                        std::cout << "\n " << i << "  " << j << "  cost: " << bestResult << " = " << distances[tempBestPath[i-1]][tempBestPath[i]] << " + " << distances[tempBestPath[i]][tempBestPath[i+1]] << " + " << distances[tempBestPath[j-1]][tempBestPath[j]] << " + " << distances[tempBestPath[j]][tempBestPath[j+1]] << " - " << distances[tempBestPath[i-1]][tempBestPath[j]] << " - " << distances[tempBestPath[j]][tempBestPath[i+1]] << " - " << distances[tempBestPath[j-1]][tempBestPath[i]] << " - " << distances[tempBestPath[i]][tempBestPath[j+1]];
+                    }
+/////////////////////////////////////////////////////////////////////sprawdzenie czy nie nalezy do tabu
+
+
+                    if(bestResult <= tempCost){              ////////////////// kryterium aspiracji
+
+
+
+                        tempPath[0] = tempBestPath[i];
+                        tempPath[1] = tempBestPath[j];
+                        tempCost = bestResult;
+
+                    }
+                }
+
+
+
 
         }
 
         //setBestPath
-        bestCost = tempBestCost;
-        for (int i = 0; i < cityamount + 1; i++)
-            bestPath[i] = tempBestPath[i];
+        if( bestCost > tempBestCost)
+        {
+            bestCost = tempBestCost;
+            for (int i = 0; i < cityamount + 1; i++)
+                bestPath[i] = tempBestPath[i];
+        }
+        else
+            divers++;
 
     }
 
