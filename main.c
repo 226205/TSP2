@@ -18,7 +18,7 @@ void Writetab(int**);
 void menu();
 //class Annealing();
 void AnnMenu();
-int SimAnn(double, double, float);
+int SimAnn(double, double, float, bool);
 void TabuMenu();
 int TabuSearch(int, int, int);
 
@@ -153,9 +153,10 @@ void AnnMenu()
     double temperatureMax = 1000;
     double temperatureMin = 1;
     float annealing = 0;
+    bool swaping = false;
     int choice = -1;
     while (choice != '0'){
-        std::cout << "\n Symulowane wyrzazanie, ustaw porzadane parametry:\n 1. temperatureMax = " << temperatureMax << ", temperatureMin = " << temperatureMin << "\n 2. Stopien wyrzazania = " << annealing << "\n 6. Uruchom algorytm\n 8. Wyswietl wyniki\n 9. Wyczysc wyniki\n 0. Powrot do menu glownego\n Twoj wybor: ";
+        std::cout << "\n\n Symulowane wyrzazanie, ustaw porzadane parametry:\n 1. temperatureMax = " << temperatureMax << ", temperatureMin = " << temperatureMin << "\n 2. Stopien wyrzazania = " << annealing << "\n 3. Swap(0)/Insert(1): " << swaping << "\n 6. Uruchom algorytm\n 8. Wyswietl wyniki\n 9. Wyczysc wyniki\n 0. Powrot do menu glownego\n Twoj wybor: ";
         choice = getche();
         switch(choice){
             case '1':{
@@ -164,7 +165,7 @@ void AnnMenu()
                     std::cin >> temperatureMin;
                     std::cout << "Podaj maksymalna temperature: ";
                     std::cin >> temperatureMax;
-                    if(temperatureMax <= temperatureMin) std::cout << "Temperatura minimalna musi byc mniejsza od maksymalnej";
+                    if(temperatureMax <= temperatureMin) std::cout << "\nTemperatura minimalna musi byc mniejsza od maksymalnej";
                 } while (temperatureMax <= temperatureMin);
                 break;}
 
@@ -180,6 +181,11 @@ void AnnMenu()
                 } while (annealing <= 0 || annealing >= 1);
                 break;}
 
+            case '3':{
+                swaping = !swaping;
+                break;
+            }
+
             case '6':{
                 if(annealing <= 0 || annealing >= 1)
                     std::cout << "\n Stopien wyrzazania nie zostal ustawiony, sprobuj ponownie.\n";
@@ -189,7 +195,7 @@ void AnnMenu()
                     clock_t begin = clock();
 
                     for(int i = 0; i < numberOfRepeats; i++){
-                        newResult = SimAnn(temperatureMax, temperatureMin, annealing);
+                        newResult = SimAnn(temperatureMax, temperatureMin, annealing, swaping);
                         results[newResult]++;
                     }
                     std::clock_t end = clock();
@@ -217,7 +223,7 @@ void AnnMenu()
 }
 
 
-int SimAnn(double temperatureMax, double temperatureMin, float annealing)
+int SimAnn(double temperatureMax, double temperatureMin, float annealing, bool swaping)
 {
 
 	int* bestPath = new int[cityamount+1];      //sciezka i waga optymalnego rozwiazania
@@ -240,24 +246,42 @@ int SimAnn(double temperatureMax, double temperatureMin, float annealing)
     int iteracja = 0;
     while (temperatureMax > temperatureMin) {
         iteracja++;
-        for (int i = 0; i <= cityamount; i++)
-            tempPath[i] = tempBestPath[i];
-        do {
-            cityA = (rand() % (cityamount - 1)) + 1;
-            cityB = (rand() % (cityamount - 1)) + 1;
-        } while (cityA == cityB);
 
-        temp = tempPath[cityA];
-        tempPath[cityA] = tempPath[cityB];
-        tempPath[cityB] = temp;
+        for (int i = 0; i <= cityamount; i++)           //kopiowanie tablicy z aktualnym rozwiazaniem
+            tempPath[i] = tempBestPath[i];
+
+            do {                                            //losowanie 2 roznych pozycji w sekwencji miast do zamiany
+                cityA = (rand() % (cityamount - 1)) + 1;
+                cityB = (rand() % (cityamount - 1)) + 1;
+            } while (cityA == cityB);
+
+        if(swaping == false){                               // 0 = swap, 1 = insert
+            temp = tempPath[cityA];                         //zamiana ang.swap
+            tempPath[cityA] = tempPath[cityB];
+            tempPath[cityB] = temp;
+        }
+        else{                                               //insert, wyciagniecie miasta, przesuniecie je w dowolne miejsce kolejki
+
+            temp = tempPath[cityA];
+            if(cityA > cityB){
+                for(int i = 0; i < cityA - cityB; i++)
+                    tempPath[cityA - i] = tempPath[cityA - i -1];
+                tempPath[cityB] = temp;
+            }
+            else{
+                for(int i = 0; i < cityB - cityA; i++)
+                    tempPath[cityA + i] = tempPath[cityA + i +1];
+                tempPath[cityB] = temp;
+            }
+        }
 
         tempCost =  diff = 0;
-        for(int i = 0; i < cityamount; i++){
+        for(int i = 0; i < cityamount; i++){            //obliczanie wartosci nowej sciezki
             tempCost += distances[tempPath[i]][tempPath[i + 1]];
         }
-        diff = tempCost - tempBestCost;
+        diff = tempCost - tempBestCost;                 //roznica wartosci miedzy stara i nowa sciezka
 
-        if(((double)rand() / (RAND_MAX)) < exp((-1)*diff / temperatureMax) || diff < 0){  // zabezpieczenie przed przekreceniem inta
+        if(((double)rand() / (RAND_MAX)) < exp((-1)*diff / temperatureMax) || diff < 0){  //sprawdzanie ze wzoru, czy nowa sciezka stanie sie aktualna + zabezpieczenie przed przekreceniem inta
 //            std::cout << "\n\n123456\n\n";
             tempBestCost = 0;
             for(int i = 0; i < cityamount; i++){
@@ -270,15 +294,15 @@ int SimAnn(double temperatureMax, double temperatureMin, float annealing)
                     bestPath[i] = tempBestPath[i];
             }
         }
-        temperatureMax = temperatureMax * annealing;    // redukcja geometryczna
+        temperatureMax = temperatureMax * annealing;    // redukcja geometryczna temperatury
 	}
 
-//    std::cout<<"\n\nNajkrotsza odnaleziona droga przez wszystkie miasta to:\n";
-//    for(int i = 0; i < cityamount; i++)
-//        std::cout << bestPath[i] << " -> ";
-//    std::cout << bestPath[cityamount];
-//    std::cout<<"\nJej calkowity dystans wynosi: " << bestCost;
-//    std::cout<<"\n\niteracja: "<<iteracja<< "\n\n";
+    std::cout<<"\n\nNajkrotsza odnaleziona droga przez wszystkie miasta to:\n";
+    for(int i = 0; i < cityamount; i++)
+        std::cout << bestPath[i] << " -> ";
+    std::cout << bestPath[cityamount];
+    std::cout<<"\nJej calkowity dystans wynosi: " << bestCost;
+    std::cout<<"\n\niteracja: "<<iteracja<< "\n\n";
 
 	delete[] tempBestPath;
 	delete[] bestPath;
