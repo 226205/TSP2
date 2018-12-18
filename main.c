@@ -427,8 +427,6 @@ int TabuSearch(int numberOfIteration, int tabuSize, int doDiv)
             delete[] random;
             tempBestCost = 0;
             divers = 0;
-            tabuIterator = 0;
-
 
             for(int i = 1; i < cityamount; i++)                 // zerowanie listy tabu
                 for(int j = i+1; j < cityamount; j++)
