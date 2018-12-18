@@ -371,46 +371,77 @@ void TabuMenu()
 
 int TabuSearch(int tabuSize)
 {
+
+    int** tabuList = new int*[2];             // inicjalizacja tablicy Tabu w rozmiarze 2*x
+    tabuList[0] = new int[tabuSize];
+    tabuList[1] = new int[tabuSize];
+    int tabuIterator;
+
 	int* bestPath = new int[cityamount + 1];      //sciezka i waga optymalnego rozwiazania
 	int bestCost = INT_MAX;
 
 	int* tempBestPath = new int[cityamount + 1];  //sciezka i waga optymalnego rozwiazania tymczasowego
 	int tempBestCost = INT_MAX;
+    tempBestPath[0] = tempBestPath[cityamount] = 0;
 
     int* tempPath = new int [cityamount + 1];
-    for(int i = 0; i <= cityamount; i++)
-        tempPath[i] = 0;
-
     int tempCost = INT_MAX;
 
-    //setTempBestPath on random
-	tempBestPath[0] = tempBestPath[cityamount] = 0;
+    int doDiv = 10;
+    int divers;
+    divers = doDiv;
+    int numberOfIteration = 1;
 
-    bool* random = new bool[cityamount + 1];
-    random[0] = random[cityamount] = true;
-    for(int i = 1; i < cityamount; i++)
-        random[i] = false;
-    int tempR, fA, tA;
+    for(int q = 0; q < numberOfIteration; q++)
+    {
+        if(divers == doDiv)
+        {
+            //setTempBestPath on random
+            for(int i = 0; i <= cityamount; i++)
+                tempPath[i] = 0;
 
-    for (int i = 1; i < cityamount; i++){
-        fA = tA = 0;
-        tempR = (rand() % (cityamount - i)) + 1;
-        for(int j = 1; fA < tempR; j++){
-            if(random[j] == false)
-                fA++;
-            else
-                tA++;
+            bool* random = new bool[cityamount + 1];            //stworzenie tablicy mowiacej czy dana liczba juz wystapila w sekwencji
+            random[0] = random[cityamount] = true;              //podpisanie pierwszego i ostatniego elementu jako juz wykonanego
+            for(int i = 1; i < cityamount; i++)                 //podpisanie pozostalych jako niewykonanych
+                random[i] = false;
+            int tempR, fA, tA;
+
+            for (int i = 1; i < cityamount; i++){               //wykonywanie kolejnych miejsc sekwencji
+                fA = tA = 0;
+                tempR = (rand() % (cityamount - i)) + 1;        //tempR przyjmuje wartosc losowa z zakresu od 1 do ilosci miejsc pozostalych do zapisu
+                for(int j = 1; fA < tempR; j++){                //wykonanie petli tak dlugo, az znajdziemy tyle miejsc nieprzypisanych ile chce nasza wartosc tempR
+                    if(random[j] == false)                      //jesli wartosc jeszcze nie wystapila to zwiekszamy falseAmount, potrzebna nam jest wartosc liczby z randa
+                        fA++;
+                    else                                        //jesli wartosc juz wystapila to zwiekszamy trueAmount, musimy wiedziec ile liczb skipowalismy aby dodac potem ta ilosc do wpisywanej liczby
+                        tA++;
+                }
+                random[tempR + tA] = true;                      //wpisanie liczby do sekwencji oraz oznaczenie jej jako wykorzystanej
+                tempBestPath[i] = tempR + tA;
+            }
+            delete[] random;
+            tempBestCost = 0;
+            divers = 0;
+            tabuIterator = 0;
+
+            for(int i = 0; i < tabuSize; i++){                  // zerowanie listy tabu
+                tabuList[0][i] = 0;
+                tabuList[1][i] = 0;
+            }
+
+            for(int i = 0; i < cityamount; i++)                 // obliczanie odleglosci nowej sciezki
+                tempBestCost += distances[tempBestPath[i]][tempBestPath[i + 1]];
         }
-        std::cout << "\n tempr: " << tempR << "  tA" << tA;
-        random[tempR + tA] = true;
-        tempBestPath[i] = tempR + tA;
+        else
+        {
+
+        }
+
+        //setBestPath
+        bestCost = tempBestCost;
+        for (int i = 0; i < cityamount + 1; i++)
+            bestPath[i] = tempBestPath[i];
+
     }
-    delete[] random;
-
-	//setBestPath
-	for (int i = 0; i < cityamount + 1; i++)
-		bestPath[i] = tempBestPath[i];
-
 
     std::cout<<"\n\nNajkrotsza odnaleziona droga przez wszystkie miasta to:\n";
     for(int i = 0; i < cityamount; i++)
